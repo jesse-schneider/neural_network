@@ -48,19 +48,33 @@ class NeuralNetwork():
         for i in range(len(hiddenL)):
             hiddenL[i] = self.sigmoid(hiddenL[i] + self.hidden_bias[i])
         # print(hiddenL)
+
         for i in range(len(outputL)):
             for j in range(len(sample)):
                 outputL[i] = outputL[i] + (hiddenL[j] * self.hidden_to_outputW[i][j])
         for i in range(len(outputL)):
             outputL[i] = self.sigmoid(outputL[i] + self.output_bias[i])
         # print(outputL)
+
         for i in range(len(error)):
             error[i] = (0.5 * ((target[i] - outputL[i])**2))
         print("error = ", error[0] + error[1])
         return hiddenL, outputL, error 
 
 
-    # def backward_pass(self):
+    def backward_pass(self, out_h, out_o, error):
+        for i in range(len(self.hidden_to_outputW)):
+            for j in range(len(self.hidden_to_outputW[i])):
+                print(self.hidden_to_outputW[i][j])
+
+
+
+
+
+
+
+
+
 
 
 
@@ -80,6 +94,7 @@ outputs = 2
 network = NeuralNetwork(inputs, hiddens, outputs)
 for i in range(inputs):
     out_h, out_o, error = network.forward_pass(training_data[i], output_data[i])
+    network.backward_pass(out_h, out_o, error)
 
 
 
