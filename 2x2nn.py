@@ -2,21 +2,18 @@ import math
 import numpy as np
 from io import StringIO
 import pickle
-import matplotlib.pyplot as plt
+
 
 class NeuralNetwork():
     def __init__(self, num_input, num_hidden, num_output):
         #initalise network
-        self.num_input = num_input
-        self.num_hidden = num_hidden
-        self.num_output = num_output
-        self.hiddenWeights = [[np.random.rand() for i in range(num_hidden)] for j in range(num_input)]
-        self.outputWeights = [[np.random.rand() for i in range(num_output)] for j in range(num_hidden)]
-        self.hidden_bias = [np.random.rand() for i in range(num_hidden)]
-        self.output_bias = [np.random.rand() for i in range(num_output)]
+        self.hiddenWeights = [[0.1, 0.1],[0.2, 0.1]]
+        self.outputWeights = [[0.1, 0.1], [0.1, 0.2]]
+        self.hidden_bias = [0.1, 0.1]
+        self.output_bias = [0.1, 0.1]
         self.learning_rate = 3
-        self.n_epochs = 30
-        self.batch_size = 20
+        self.n_epochs = 100
+        self.batch_size = 2
         
 
     #sigmoid activation function
@@ -29,21 +26,22 @@ class NeuralNetwork():
 
 
     def forward_pass(self, sample, target):
-        outputL = np.zeros(self.num_output)
-        hiddenL = np.zeros(self.num_hidden)
-        error = np.zeros(self.num_output)
+        outputL = np.zeros(2)
+        hiddenL = np.zeros(2)
+        error = np.zeros(2)
         for i in range(len(hiddenL)):
             for j in range(len(sample)):
-                hiddenL[i] = hiddenL[i] + (sample[j] * self.hiddenWeights[j][i])
+                hiddenL[i] = hiddenL[i] + (sample[j] * self.hiddenWeights[i][j])
         for i in range(len(hiddenL)):
             hiddenL[i] = self.sigmoid(hiddenL[i] + self.hidden_bias[i])
+        # print("out_h: ", hiddenL)
 
         for i in range(len(outputL)):
-            for j in range(len(hiddenL)):
-                outputL[i] = outputL[i] + (hiddenL[j] * self.outputWeights[j][i])
+            for j in range(len(sample)):
+                outputL[i] = outputL[i] + (hiddenL[j] * self.outputWeights[i][j])
         for i in range(len(outputL)):
             outputL[i] = self.sigmoid(outputL[i] + self.output_bias[i])
-        #print("out_o: ", outputL)
+        # print("out_o: ", outputL)
 
         for i in range(len(error)):
             error[i] = (0.5 * ((target[i] - outputL[i])**2))
@@ -63,12 +61,12 @@ class NeuralNetwork():
                 if j == outputs - 1:
                     error_outh.append(errorSum)
 
-        for i in range(hiddens):
+        for i in range(len(inputs)):
             for j in range(len(self.hiddenWeights[i])):
                 weight = error_outh[j] * self.sigmoid_derivative(out_h[j]) * inputs[i]
                 weights.append(weight)
         
-        for i in range(outputs):
+        for i in range(len(inputs)):
             for j in range(len(self.outputWeights[i])):
                 weight = -(target[j] - out_o[j]) * self.sigmoid_derivative(out_o[j]) * (out_h[i])
                 weights.append(weight)
@@ -88,27 +86,22 @@ training_data = [[0.1, 0.1], [0.1, 0.2]]
 output_data = [[1, 0], [0, 1]]
 
 
-inputs = 784
-hiddens = 30
-outputs = 10
+inputs = 2
+hiddens = 2
+outputs = 2
 
-pickledata = open("trainDigitX.pickle", "rb")
-pickledata2 = open("trainDigitY.pickle", "rb")
-training_data1 = pickle.load(pickledata)
-out = pickle.load(pickledata2)
-output_data1 = []
-for i in range(len(out)):
-    newo = [0 for j in range(10)]
-    newo[int(out[i])] = 1
-    output_data1.append(newo)
+# pickledata = open("trainDigitX.pickle", "rb")
+# pickledata2 = open("trainDigitY.pickle", "rb")
+# training_data = pickle.load(pickledata)
+# output_data = pickle.load(pickledata2)
 
 network = NeuralNetwork(inputs, hiddens, outputs)
-num_batchs = len(training_data1) // network.batch_size
+num_batchs = len(training_data) // network.batch_size
 
 for epoch in range(network.n_epochs):
     for batch in range(num_batchs):
 
-        current = training_data1[(batch * network.batch_size): ((batch + 1) * network.batch_size)]
+        current = training_data[(batch * network.batch_size): (batch + 1 * network.batch_size)]
 
         current_size = len(current)
 
@@ -117,8 +110,8 @@ for epoch in range(network.n_epochs):
         average_gradients = [0 for i in range((inputs * hiddens) + (hiddens * outputs) + hiddens + outputs)]
 
         for i in range(len(current)):
-            out_h, out_o, error = network.forward_pass(training_data1[i], output_data1[i])
-            gradients = network.backward_pass(out_h, out_o, output_data1[i], training_data1[i])
+            out_h, out_o, error = network.forward_pass(training_data[i], output_data[i])
+            gradients = network.backward_pass(out_h, out_o, output_data[i], training_data[i])
 
             #add gradients from back pass to sum total
             for i in range(len(gradients)):
@@ -160,18 +153,8 @@ for epoch in range(network.n_epochs):
         av_error = errorSum / len(error)
         
         print("Average Error: ", av_error)
-        # plt.plot(av_error)
-        # plt.ylabel('Error')
-        # plt.show()
 
         # print("hidden weights: ", network.hiddenWeights)
         # print("output weights: ", network.outputWeights)
         # print("hidden bias: ", network.hidden_bias)
         # print("output bias: ", network.output_bias)
-
-        
-        
-        
-
-
-
