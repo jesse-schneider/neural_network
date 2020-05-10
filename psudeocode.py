@@ -21,7 +21,7 @@ for (x, y) for (x, y) in current batch:
     sum_gradw = sum_gradw + gradw_x
 
 # average of gradients over the current batch grade 
-gradW_batch = batch sum_gradw / current batch_size
+gradW_batch = sum_gradw / current_batch_size
 
 # update the parameters 
 W = W - learning rate * gradw_batch
