@@ -28,19 +28,19 @@ class NeuralNetwork():
         return x * (1.0 - x)
 
     def cost_function(self, x, y):
-       return (1/(2*self.num_input)) * ((x - y)**2)
+        return (1/(2*self.num_input)) * ((x - y)**2)
 
     def update_weights(self, hidden_gradients, output_gradients, hidden_bias_grad, output_bias_grad):
         ind = 0
         for i in range(self.num_hidden):
             for j in range(self.num_input):
-                self.hiddenWeights[j][i] = self.hiddenWeights[j][i] - (self.learning_rate * hidden_gradients[ind])
+                self.hiddenWeights[j][i] -= (self.learning_rate * hidden_gradients[ind])
                 ind += 1   
 
         ind = 0
         for i in range(self.num_output):
             for j in range(self.num_hidden):
-                self.outputWeights[j][i] = self.outputWeights[j][i] - (self.learning_rate * output_gradients[ind])
+                self.outputWeights[j][i] -= (self.learning_rate * output_gradients[ind])
                 ind += 1
  
         for i in range(len(self.hidden_bias)):
@@ -66,16 +66,16 @@ class NeuralNetwork():
                 outputL[j] = outputL[j] + (hiddenL[i] * self.outputWeights[i][j])
         for i in range(self.num_output):
             outputL[i] = self.sigmoid(outputL[i] + self.output_bias[i])
-        print("out_o: ", outputL)
-        print("target: ", target)
+        # print("out_o: ", outputL)
+        # print("target: ", target)
 
         for i in range(len(error)):
             error[i] = self.cost_function(target[i], outputL[i])
-        return hiddenL, outputL, error 
+        return hiddenL, outputL, error
 
 
     def backward_pass(self, out_h, out_o, inputs, target):
-        weights = []
+        weight_derivs = []
         error_outh = []
 
         for i in range(self.num_hidden):
@@ -88,23 +88,23 @@ class NeuralNetwork():
 
         for i in range(self.num_input):
             for j in range(len(self.hiddenWeights[i])):
-                weight = error_outh[j] * self.sigmoid_derivative(out_h[j]) * inputs[i]
-                weights.append(weight)
+                deriv = error_outh[j] * self.sigmoid_derivative(out_h[j]) * inputs[i]
+                weight_derivs.append(deriv)
         
         for i in range(self.num_hidden):
             for j in range(len(self.outputWeights[i])):
-                weight = -(target[j] - out_o[j]) * self.sigmoid_derivative(out_o[j]) * (out_h[i])
-                weights.append(weight)
+                deriv = -(target[j] - out_o[j]) * self.sigmoid_derivative(out_o[j]) * (out_h[i])
+                weight_derivs.append(deriv)
 
 
         for i in range(len(self.hidden_bias)):
-                weight = self.sigmoid_derivative(out_h[i]) * error_outh[i]
-                weights.append(weight)
+                deriv = self.sigmoid_derivative(out_h[i]) * error_outh[i]
+                weight_derivs.append(deriv)
 
         for i in range(len(self.output_bias)):
-                weight = self.sigmoid_derivative(out_o[i]) * error_outh[i]
-                weights.append(weight)
-        return weights
+                deriv = self.sigmoid_derivative(out_o[i]) * error_outh[i]
+                weight_derivs.append(deriv)
+        return weight_derivs
 
 
 inputs = 784
@@ -116,6 +116,7 @@ pickledata2 = open("trainDigitY.pickle", "rb")
 training_data = pickle.load(pickledata)
 out = pickle.load(pickledata2)
 output_data = []
+av_plot = []
 for i in range(len(out)):
     newo = [0 for j in range(10)]
     newo[int(out[i])] = 1
@@ -126,7 +127,7 @@ num_batchs = len(training_data) // network.batch_size
 
 for epoch in range(network.n_epochs):
     for batch in range(num_batchs):
-        print("batch number: ", batch)
+        # print("batch number: ", batch)
 
         current = training_data[(batch * network.batch_size): ((batch + 1) * network.batch_size)]
         current_target = output_data[(batch * network.batch_size): ((batch + 1) * network.batch_size)]
@@ -165,11 +166,13 @@ for epoch in range(network.n_epochs):
         for i in range(len(error)):
             errorSum += error[i]
         av_error = errorSum / len(error)
+        av_plot.append(av_error)
         
-        print("Average Error: ", av_error)
-        # plt.plot(av_error)
-        # plt.ylabel('Error')
-        # plt.show()
+        
+        # print("Average Error: ", av_error)
+        plt.plot(av_plot)
+    plt.ylabel('Error')
+    plt.show()
 
         # print("hidden weights: ", network.hiddenWeights)
         # print("output weights: ", network.outputWeights)
