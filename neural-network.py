@@ -1,6 +1,5 @@
 import math
 import numpy as np
-from io import StringIO
 import pickle
 import matplotlib.pyplot as plt
 
@@ -36,7 +35,6 @@ class NeuralNetwork():
             for j in range(self.num_input):
                 self.hiddenWeights[j][i] -= (self.learning_rate * hidden_gradients[ind])
                 ind += 1   
-
         ind = 0
         for i in range(self.num_output):
             for j in range(self.num_hidden):
@@ -48,6 +46,23 @@ class NeuralNetwork():
 
         for i in range(len(network.output_bias)):
             self.output_bias[i] -= (self.learning_rate * output_bias_grad[i])
+
+    def predict(self, sample):
+        outputL = [0 for i in range(self.num_output)]
+        hiddenL = [0 for i in range(self.num_hidden)]
+
+        for i in range(self.num_input):
+            for j in range(self.num_hidden):
+                hiddenL[j] = hiddenL[j] + (sample[i] * self.hiddenWeights[i][j])
+        for i in range(self.num_hidden):
+            hiddenL[i] = self.sigmoid(hiddenL[i] + self.hidden_bias[i])
+
+        for i in range(self.num_hidden):
+            for j in range(self.num_output):
+                outputL[j] = outputL[j] + (hiddenL[i] * self.outputWeights[i][j])
+        for i in range(self.num_output):
+            outputL[i] = self.sigmoid(outputL[i] + self.output_bias[i])
+        return outputL
 
 
     def forward_pass(self, sample, target):
@@ -111,10 +126,14 @@ inputs = 784
 hiddens = 30
 outputs = 10
 
-pickledata = open("trainDigitX.pickle", "rb")
-pickledata2 = open("trainDigitY.pickle", "rb")
-training_data = pickle.load(pickledata)
-out = pickle.load(pickledata2)
+train_pickle = open("trainDigitX.pickle", "rb")
+train_pickle_out = open("trainDigitY.pickle", "rb")
+test_pickle = open("testDigitX.pickle", "rb")
+test_pickle_out = open("testDigitY.pickle", "rb")
+training_data = pickle.load(train_pickle)
+out = pickle.load(train_pickle_out)
+test_data = pickle.load(test_pickle)
+test_data_out = pickle.load(test_pickle_out)
 output_data = []
 av_plot = []
 for i in range(len(out)):
@@ -140,9 +159,6 @@ for epoch in range(network.n_epochs):
 
         for i in range(len(current)):
             out_h, out_o, error = network.forward_pass(current[i], current_target[i])
-            # print("out_o: ", out_o)
-            # print("out_h: ", out_h)
-            # print("error: ", error)
             gradients = network.backward_pass(out_h, out_o, current[i], current_target[i])
 
             #add gradients from back pass to sum total
@@ -168,13 +184,25 @@ for epoch in range(network.n_epochs):
         av_error = errorSum / len(error)
         av_plot.append(av_error)
         
-        
-        # print("Average Error: ", av_error)
         plt.plot(av_plot)
-    plt.ylabel('Error')
+        plt.ylabel('Error')
     plt.show()
 
         # print("hidden weights: ", network.hiddenWeights)
         # print("output weights: ", network.outputWeights)
         # print("hidden bias: ", network.hidden_bias)
         # print("output bias: ", network.output_bias)
+
+
+# read in test data
+# forward feed sample through network
+# get the highest value of the output matrix, return the index as the prediction
+
+for i in range(len(test_data)):
+    predict = network.forward_pass(test_data[i])
+    max = 0
+    for j in range(len(predict)):
+        if predict[j] > predict[max]:
+            max = j
+
+    print("prediction for sample %: ", i, max, "    actual value is: %", test_data_out[i])

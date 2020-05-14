@@ -5,3 +5,5 @@ TrainDigitX.csv
 TrainDigitY.csv
 trainDigitX.pickle
 trainDigitY.pickle
+testDigitX.pickle
+testDigitY.pickle
