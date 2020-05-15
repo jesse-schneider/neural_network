@@ -9,10 +9,10 @@ class NeuralNetwork():
         self.num_input = num_input
         self.num_hidden = num_hidden
         self.num_output = num_output
-        self.hiddenWeights = [[np.random.rand()/2 for i in range(num_hidden)] for j in range(num_input)]
-        self.outputWeights = [[np.random.rand()/2 for i in range(num_output)] for j in range(num_hidden)]
-        self.hidden_bias = [np.random.rand()/2 for i in range(num_hidden)]
-        self.output_bias = [np.random.rand()/2 for i in range(num_output)]
+        self.hidden_weights = [[np.random.randn() for i in range(num_hidden)] for j in range(num_input)]
+        self.output_weights = [[np.random.randn() for i in range(num_output)] for j in range(num_hidden)]
+        self.hidden_bias = [np.random.randn() for i in range(num_hidden)]
+        self.output_bias = [np.random.randn() for i in range(num_output)]
         self.learning_rate = 3
         self.n_epochs = 1
         self.batch_size = 20
@@ -27,25 +27,27 @@ class NeuralNetwork():
         return x * (1.0 - x)
 
     def cost_function(self, x, y):
-        return (1/(2*self.num_input)) * ((x - y)**2)
+        return (1/2*self.num_input) * ((x - y)**2)
 
-    def update_weights(self, hidden_gradients, output_gradients, hidden_bias_grad, output_bias_grad):
-        ind = 0
+    def update_weights(self, output_gradients, hidden_gradients, hidden_bias_grad, output_bias_grad, batch_size):
+        
+        #update hidden -> output weights
         for i in range(self.num_hidden):
-            for j in range(self.num_input):
-                self.hiddenWeights[j][i] -= (self.learning_rate * hidden_gradients[ind])
-                ind += 1   
-        ind = 0
-        for i in range(self.num_output):
-            for j in range(self.num_hidden):
-                self.outputWeights[j][i] -= (self.learning_rate * output_gradients[ind])
-                ind += 1
- 
-        for i in range(len(self.hidden_bias)):
-            self.hidden_bias[i] -= (self.learning_rate * hidden_bias_grad[i])
+            for j in range(self.num_output):
+                self.output_weights[i][j] -= (self.learning_rate * (output_gradients[i][j] / batch_size))
 
+        #update input -> hidden weights
+        for i in range(self.num_input):
+            for j in range(self.num_hidden):
+                self.hidden_weights[i][j] -= (self.learning_rate * (hidden_gradients[i][j] / batch_size))
+ 
+        #update hidden bias
+        for i in range(len(self.hidden_bias)):
+            self.hidden_bias[i] -= (self.learning_rate * (hidden_bias_grad[i] / batch_size))
+
+        #update output bias
         for i in range(len(network.output_bias)):
-            self.output_bias[i] -= (self.learning_rate * output_bias_grad[i])
+            self.output_bias[i] -= (self.learning_rate * (output_bias_grad[i] /batch_size))
 
     def predict(self, sample):
         outputL = [0 for i in range(self.num_output)]
@@ -53,13 +55,13 @@ class NeuralNetwork():
 
         for i in range(self.num_input):
             for j in range(self.num_hidden):
-                hiddenL[j] = hiddenL[j] + (sample[i] * self.hiddenWeights[i][j])
+                hiddenL[j] = hiddenL[j] + (sample[i] * self.hidden_weights[i][j])
         for i in range(self.num_hidden):
             hiddenL[i] = self.sigmoid(hiddenL[i] + self.hidden_bias[i])
 
         for i in range(self.num_hidden):
             for j in range(self.num_output):
-                outputL[j] = outputL[j] + (hiddenL[i] * self.outputWeights[i][j])
+                outputL[j] = outputL[j] + (hiddenL[i] * self.output_weights[i][j])
         for i in range(self.num_output):
             outputL[i] = self.sigmoid(outputL[i] + self.output_bias[i])
         return outputL
@@ -72,54 +74,70 @@ class NeuralNetwork():
 
         for i in range(self.num_input):
             for j in range(self.num_hidden):
-                hiddenL[j] = hiddenL[j] + (sample[i] * self.hiddenWeights[i][j])
+                hiddenL[j] += sample[i] * self.hidden_weights[i][j]
+
         for i in range(self.num_hidden):
             hiddenL[i] = self.sigmoid(hiddenL[i] + self.hidden_bias[i])
 
         for i in range(self.num_hidden):
             for j in range(self.num_output):
-                outputL[j] = outputL[j] + (hiddenL[i] * self.outputWeights[i][j])
+                outputL[j] = outputL[j] + (hiddenL[i] * self.output_weights[i][j])
+        
         for i in range(self.num_output):
             outputL[i] = self.sigmoid(outputL[i] + self.output_bias[i])
-        # print("out_o: ", outputL)
+        print("out_o: ", outputL)
         # print("target: ", target)
 
+        #calculate error from output node
         for i in range(len(error)):
-            error[i] = self.cost_function(target[i], outputL[i])
+            error[i] = (target[i] - outputL[i]) * self.sigmoid_derivative(outputL[i])
         return hiddenL, outputL, error
 
 
-    def backward_pass(self, out_h, out_o, inputs, target):
-        weight_derivs = []
-        error_outh = []
+    def backward_pass(self, out_h, out_o, error, inputs, target):
+        hidden_output_grad = [[0 for i in range(self.num_output)] for j in range(self.num_hidden)]
+        input_hidden_grad = [[0 for i in range(self.num_hidden)] for j in range(self.num_input)]
 
+        hidden_error = [[0 for i in range(self.num_output)] for j in range(self.num_hidden)]
+        hidden_error_summed = [0 for i in range(self.num_hidden)]
+        input_error = [0 for i in range(self.num_hidden)]
+        hidden_bias_grad = [0 for i in range(self.num_hidden)]
+        output_bias_grad = [0 for i in range(self.num_output)]
+
+
+        #finding error in weights from hidden -> output
         for i in range(self.num_hidden):
-            errorSum = 0
-            for j in range(self.num_output):
-                error = -(target[j] - out_o[j]) * self.sigmoid_derivative(out_o[j]) * self.outputWeights[i][j]
-                errorSum += error
-                if j == outputs - 1:
-                    error_outh.append(errorSum)
+            for j in range(len(error)):
+                hidden_output_grad[i][j] = error[j] * out_h[i] * (-1)
 
+        #find error caused by each weight in hidden layer
+        for i in range(len(self.output_weights)):
+            for j in range(len(self.output_weights[i])):
+                hidden_error[i][j] = error[j] * self.output_weights[i][j]
+
+        #sum hidden errors to combine for layer 1
+        for i in range(self.num_hidden):
+            for j in range(len(hidden_error[i])):
+                hidden_error_summed[j] += hidden_error[i][j]
+
+        #calculate hidden error * sigmoid derivative
+        for i in range(self.num_hidden):
+            input_error[i] = hidden_error_summed[i] * self.sigmoid_derivative(out_h[i])
+
+        #calculate the input -> hidden error
         for i in range(self.num_input):
-            for j in range(len(self.hiddenWeights[i])):
-                deriv = error_outh[j] * self.sigmoid_derivative(out_h[j]) * inputs[i]
-                weight_derivs.append(deriv)
-        
-        for i in range(self.num_hidden):
-            for j in range(len(self.outputWeights[i])):
-                deriv = -(target[j] - out_o[j]) * self.sigmoid_derivative(out_o[j]) * (out_h[i])
-                weight_derivs.append(deriv)
+            for j in range(len(input_error)):
+                input_hidden_grad[i][j] = input_error[j] * inputs[i]
 
-
+        #calculate hidden layer bias gradient
         for i in range(len(self.hidden_bias)):
-                deriv = self.sigmoid_derivative(out_h[i]) * error_outh[i]
-                weight_derivs.append(deriv)
+            hidden_bias_grad[i] = self.sigmoid_derivative(out_h[i]) * input_error[i]
 
+        #calculate output layer bias gradient
         for i in range(len(self.output_bias)):
-                deriv = self.sigmoid_derivative(out_o[i]) * error_outh[i]
-                weight_derivs.append(deriv)
-        return weight_derivs
+            output_bias_grad[i] = self.sigmoid_derivative(out_o[i]) * error[i]
+        return hidden_output_grad, input_hidden_grad, hidden_bias_grad, output_bias_grad
+
 
 
 inputs = 784
@@ -146,7 +164,7 @@ num_batchs = len(training_data) // network.batch_size
 
 for epoch in range(network.n_epochs):
     for batch in range(num_batchs):
-        # print("batch number: ", batch)
+        print("batch number: ", batch)
 
         current = training_data[(batch * network.batch_size): ((batch + 1) * network.batch_size)]
         current_target = output_data[(batch * network.batch_size): ((batch + 1) * network.batch_size)]
@@ -154,27 +172,35 @@ for epoch in range(network.n_epochs):
         current_size = len(current)
 
         #initialise gradients sum and average arrays
+        hidden_weights_sum = [[0 for i in range(network.num_hidden)] for j in range(network.num_input)]
+        output_weights_sum = [[0 for i in range(network.num_output)] for j in range(network.num_hidden)]
+        hidden_bias_sum = [0 for i in range(network.num_hidden)]
+        output_bias_sum = [0 for i in range(network.num_output)]
+
         gradients_sum = [0 for i in range((inputs * hiddens) + (hiddens * outputs) + hiddens + outputs)]
         average_gradients = [0 for i in range((inputs * hiddens) + (hiddens * outputs) + hiddens + outputs)]
 
         for i in range(len(current)):
             out_h, out_o, error = network.forward_pass(current[i], current_target[i])
-            gradients = network.backward_pass(out_h, out_o, current[i], current_target[i])
+            out_g, hidden_g, hbias_g, obias_g = network.backward_pass(out_h, out_o, error, current[i], current_target[i])
 
             #add gradients from back pass to sum total
-            for i in range(len(gradients)):
-                gradients_sum[i] += gradients[i]
+            for i in range(len(out_g)):
+                for j in range(len(out_g[i])):
+                    output_weights_sum[i][j] += out_g[i][j]
 
-        #get the average gradients from the batch
-        for i in range(len(average_gradients)):
-            average_gradients[i] = gradients_sum[i] / current_size
-        
-        hidden_gradients = average_gradients[: (network.num_input * network.num_hidden)]
-        output_gradients = average_gradients[(network.num_input * network.num_hidden) : (network.num_input * network.num_hidden) + (network.num_output * network.num_hidden)]
-        hidden_bias_grad = average_gradients[(network.num_input * network.num_hidden) + (network.num_output * network.num_hidden): (network.num_input * network.num_hidden) + (network.num_output * network.num_hidden) + network.num_hidden]
-        output_bias_grad = average_gradients[(network.num_input * network.num_hidden) + (network.num_output * network.num_hidden) + network.num_hidden : (network.num_input * network.num_hidden) + (network.num_output * network.num_hidden) + network.num_hidden + network.num_output]
+            for i in range(len(hidden_g)):
+                for j in range(len(hidden_g[i])):
+                    hidden_weights_sum[i][j] += hidden_g[i][j]
 
-        network.update_weights(hidden_gradients, output_gradients, hidden_bias_grad, output_bias_grad)
+            for i in range(len(hbias_g)):
+                hidden_bias_sum[i] += hbias_g[i]
+
+            for i in range(len(obias_g)):
+                output_bias_sum[i] += obias_g[i]
+
+        #update weights at end of mini batch
+        network.update_weights(output_weights_sum, hidden_weights_sum, hidden_bias_sum, output_bias_sum, current_size)
         
         
 
@@ -188,8 +214,8 @@ for epoch in range(network.n_epochs):
         plt.ylabel('Error')
     plt.show()
 
-        # print("hidden weights: ", network.hiddenWeights)
-        # print("output weights: ", network.outputWeights)
+        # print("hidden weights: ", network.hidden_weights)
+        # print("output weights: ", network.output_weights)
         # print("hidden bias: ", network.hidden_bias)
         # print("output bias: ", network.output_bias)
 
@@ -199,10 +225,10 @@ for epoch in range(network.n_epochs):
 # get the highest value of the output matrix, return the index as the prediction
 
 for i in range(len(test_data)):
-    predict = network.forward_pass(test_data[i])
+    predict = network.predict(test_data[i])
     max = 0
     for j in range(len(predict)):
         if predict[j] > predict[max]:
             max = j
 
-    print("prediction for sample %: ", i, max, "    actual value is: %", test_data_out[i])
+    print("prediction for sample ", i, ":", max, "    actual value is:", test_data_out[i])
