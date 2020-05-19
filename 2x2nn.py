@@ -195,10 +195,10 @@ for epoch in range(network.n_epochs):
         out_h, out_o, error = network.forward_pass(training_data[i], output_data[i])
         out_g, hidden_g, hbias_g, obias_g = network.backward_pass(out_h, out_o, error, training_data[i], output_data[i])
 
-        print("out_gradient: ", out_g)
-        print("hidden_gradient: ", hidden_g)
-        print("hidden_bias_gradient: ", hbias_g)
-        print("out_bias_gradient: ", obias_g)
+        # print("out_gradient: ", out_g)
+        # print("hidden_gradient: ", hidden_g)
+        # print("hidden_bias_gradient: ", hbias_g)
+        # print("out_bias_gradient: ", obias_g)
 
         #add gradients from back pass to sum total
         for i in range(len(out_g)):
@@ -218,7 +218,7 @@ for epoch in range(network.n_epochs):
     #update weights at end of mini batch
     network.update_weights(output_weights_sum, hidden_weights_sum, hidden_bias_sum, output_bias_sum)
 
-    # print("hidden weights: ", network.hidden_weights)
-    # print("output weights: ", network.output_weights)
-    # print("hidden bias: ", network.hidden_bias)
-    # print("output bias: ", network.output_bias)
+    print("hidden weights: ", network.hidden_weights)
+    print("output weights: ", network.output_weights)
+    print("hidden bias: ", network.hidden_bias)
+    print("output bias: ", network.output_bias)

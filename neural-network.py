@@ -77,6 +77,7 @@ class NeuralNetwork():
             self.output_bias[i] -= (self.learning_rate * (output_bias_grad[i] /batch_size))
 
     def predict(self, sample):
+        #lists to replicate a forward pass
         outputL = [0 for i in range(self.num_output)]
         hiddenL = [0 for i in range(self.num_hidden)]
 
@@ -95,25 +96,30 @@ class NeuralNetwork():
 
 
     def forward_pass(self, sample, target):
+        #lists to store the results at each stage of the forward pass
         outputL = [0 for i in range(self.num_output)]
         hiddenL = [0 for i in range(self.num_hidden)]
         error = [0 for i in range(self.num_output)]
 
+        #pass input layer into the hidden layer
         for i in range(self.num_input):
             for j in range(self.num_hidden):
                 hiddenL[j] += sample[i] * self.hidden_weights[i][j]
 
+        #add bias and then perform sigmoid activation on hidden layer
         for i in range(self.num_hidden):
             hiddenL[i] = self.sigmoid(hiddenL[i] + self.hidden_bias[i])
 
+        #pass hidden layer into output layer
         for i in range(self.num_hidden):
             for j in range(self.num_output):
                 outputL[j] = outputL[j] + (hiddenL[i] * self.output_weights[i][j])
-        
+
+        #add bias and then perform sigmoid activation on output layer
         for i in range(self.num_output):
             outputL[i] = self.sigmoid(outputL[i] + self.output_bias[i])
 
-        #calculate error from output node
+        #calculate error in output node by finding target - output
         for i in range(len(error)):
             error[i] = (target[i] - outputL[i])
         return hiddenL, outputL, error
@@ -188,6 +194,13 @@ out = pickle.load(train_pickle_out)
 test_data = pickle.load(test_pickle)
 test_data_out = pickle.load(test_pickle_out)
 next_test_data = pickle.load(test_pickle_2)
+
+#training_data = np.loadtxt('TrainDigitX.csv', dtype=float, delimiter=',')
+#out = np.loadtxt('TrainDigitY.csv', dtype=float, delimiter=',')
+#test_data = np.loadtxt('TestDigitX.csv', dtype=float, delimiter=',')
+#test_data_out = np.loadtxt('TestDigitY.csv', dtype=float, delimiter=',')
+#next_test_data = np.loadtxt('TestDigitX2.csv', dtype=float, delimiter=',')
+
 output_data = []
 av_plot = []
 
@@ -243,11 +256,11 @@ for epoch in range(network.n_epochs):
         np.savetxt('HiddenBias.csv', network.hidden_bias)
         np.savetxt('OutputBias.csv', network.output_bias)
 
-        # errorSum = 0
-        # for i in range(len(error)):
-        #     errorSum += error[i]
-        # av_error = network.cost_function(errorSum)
-        # av_plot.append(av_error)
+        errorSum = 0
+        for i in range(len(error)):
+            errorSum += error[i]
+        av_error = network.cost_function(errorSum)
+        av_plot.append(av_error)
     predictions = network.test_data(test_data, test_data_out)
     right = 0
     for i in range(len(predictions)):
@@ -258,8 +271,8 @@ for epoch in range(network.n_epochs):
     acc.append(accuracy)
     next_predictions = network.predict_data(next_test_data)
 np.savetxt('PredictDigitY2.csv.gz', next_predictions, fmt='%0f')
-plt.plot(acc)
-plt.ylabel('Accuracy')
+plt.plot(av_plot)
+plt.ylabel('Cost function')
 plt.xlabel('Epoch')
 plt.show()
 

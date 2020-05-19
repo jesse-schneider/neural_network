@@ -38,7 +38,6 @@ class NeuralNetwork():
             for j in range(len(predict)):
                 if predict[j] > predict[max]:
                     max = j
-            # print("prediction", i, ":", max, "    actual value:", test_data_out[i])
             predictions.append(max)
         return predictions
     
@@ -51,7 +50,6 @@ class NeuralNetwork():
             for j in range(len(predict)):
                 if predict[j] > predict[max]:
                     max = j
-            # print("prediction", i, ":", max)
             predictions.append(max)
         return predictions
 
@@ -209,16 +207,7 @@ def train(network, num_batchs, training_data, out, test_data, test_data_out):
 
             #update weights at end of mini batch
             network.update_weights(output_weights_sum, hidden_weights_sum, hidden_bias_sum, output_bias_sum, current_size)
-            # np.savetxt('HiddenWeights.csv', network.hidden_weights)
-            # np.savetxt('HutputWeights.csv', network.output_weights)
-            # np.savetxt('HiddenBias.csv', network.hidden_bias)
-            # np.savetxt('OutputBias.csv', network.output_bias)
 
-            # errorSum = 0
-            # for i in range(len(error)):
-            #     errorSum += error[i]
-            # av_error = network.cost_function(errorSum)
-            # av_plot.append(av_error)
         predictions = network.test_data(test_data, test_data_out)
         right = 0
         for i in range(len(predictions)):
