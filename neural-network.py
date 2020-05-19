@@ -196,9 +196,9 @@ test_data_out = pickle.load(test_pickle_out)
 next_test_data = pickle.load(test_pickle_2)
 
 #training_data = np.loadtxt('TrainDigitX.csv', dtype=float, delimiter=',')
-#out = np.loadtxt('TrainDigitY.csv', dtype=float, delimiter=',')
+#out = np.loadtxt('TrainDigitY.csv', dtype=float)
 #test_data = np.loadtxt('TestDigitX.csv', dtype=float, delimiter=',')
-#test_data_out = np.loadtxt('TestDigitY.csv', dtype=float, delimiter=',')
+#test_data_out = np.loadtxt('TestDigitY.csv', dtype=float)
 #next_test_data = np.loadtxt('TestDigitX2.csv', dtype=float, delimiter=',')
 
 output_data = []
