@@ -4,7 +4,7 @@ import pickle
 import matplotlib.pyplot as plt
 
 class NeuralNetwork():
-    def __init__(self, num_input, num_hidden, num_output, learn):
+    def __init__(self, num_input, num_hidden, num_output, batch_size):
         #initalise network
         self.num_input = num_input
         self.num_hidden = num_hidden
@@ -13,9 +13,9 @@ class NeuralNetwork():
         self.output_weights = [[np.random.randn() for i in range(num_output)] for j in range(num_hidden)]
         self.hidden_bias = [np.random.randn() for i in range(num_hidden)]
         self.output_bias = [np.random.randn() for i in range(num_output)]
-        self.learning_rate = learn
+        self.learning_rate = 3
         self.n_epochs = 1
-        self.batch_size = 20
+        self.batch_size = batch_size
         
 
     #sigmoid activation function
@@ -75,6 +75,24 @@ class NeuralNetwork():
             self.output_bias[i] -= (self.learning_rate * (output_bias_grad[i] /batch_size))
 
     def predict(self, sample):
+        outputL = [0 for i in range(self.num_output)]
+        hiddenL = [0 for i in range(self.num_hidden)]
+
+        for i in range(self.num_input):
+            for j in range(self.num_hidden):
+                hiddenL[j] = hiddenL[j] + (sample[i] * self.hidden_weights[i][j])
+        for i in range(self.num_hidden):
+            hiddenL[i] = self.sigmoid(hiddenL[i] + self.hidden_bias[i])
+
+        for i in range(self.num_hidden):
+            for j in range(self.num_output):
+                outputL[j] = outputL[j] + (hiddenL[i] * self.output_weights[i][j])
+        for i in range(self.num_output):
+            outputL[i] = self.sigmoid(outputL[i] + self.output_bias[i])
+        return outputL
+
+
+    def forward_pass(self, sample, target):
         #lists to store the results at each stage of the forward pass
         outputL = [0 for i in range(self.num_output)]
         hiddenL = [0 for i in range(self.num_hidden)]
@@ -99,31 +117,6 @@ class NeuralNetwork():
             outputL[i] = self.sigmoid(outputL[i] + self.output_bias[i])
 
         #calculate error in output node by finding target - output
-        for i in range(len(error)):
-            error[i] = (target[i] - outputL[i])
-        return hiddenL, outputL, error
-
-
-    def forward_pass(self, sample, target):
-        outputL = [0 for i in range(self.num_output)]
-        hiddenL = [0 for i in range(self.num_hidden)]
-        error = [0 for i in range(self.num_output)]
-
-        for i in range(self.num_input):
-            for j in range(self.num_hidden):
-                hiddenL[j] += sample[i] * self.hidden_weights[i][j]
-
-        for i in range(self.num_hidden):
-            hiddenL[i] = self.sigmoid(hiddenL[i] + self.hidden_bias[i])
-
-        for i in range(self.num_hidden):
-            for j in range(self.num_output):
-                outputL[j] = outputL[j] + (hiddenL[i] * self.output_weights[i][j])
-        
-        for i in range(self.num_output):
-            outputL[i] = self.sigmoid(outputL[i] + self.output_bias[i])
-
-        #calculate error from output node
         for i in range(len(error)):
             error[i] = (target[i] - outputL[i])
         return hiddenL, outputL, error
@@ -182,7 +175,7 @@ class NeuralNetwork():
 def train(network, num_batchs, training_data, out, test_data, test_data_out):
     for epoch in range(network.n_epochs):
         for batch in range(num_batchs):
-            # print("batch number: ", batch)
+            print("batch number: ", batch)
 
             current = training_data[(batch * network.batch_size): ((batch + 1) * network.batch_size)]
             current_target = output_data[(batch * network.batch_size): ((batch + 1) * network.batch_size)]
@@ -258,17 +251,17 @@ for i in range(len(out)):
     newo[int(out[i])] = 1
     output_data.append(newo)
 
-n1 = NeuralNetwork(inputs, hiddens, outputs, 0.001)
-n2 = NeuralNetwork(inputs, hiddens, outputs, 0.1)
-n3 = NeuralNetwork(inputs, hiddens, outputs, 1.0)
-n4 = NeuralNetwork(inputs, hiddens, outputs, 10)
+# n1 = NeuralNetwork(inputs, hiddens, outputs, 1)
+# n2 = NeuralNetwork(inputs, hiddens, outputs, 5)
+# n3 = NeuralNetwork(inputs, hiddens, outputs, 10)
+# n4 = NeuralNetwork(inputs, hiddens, outputs, 1)
 n5 = NeuralNetwork(inputs, hiddens, outputs, 100)
-num_batchs = len(training_data) // n1.batch_size
+num_batchs = len(training_data) // n5.batch_size
 
-train(n1, num_batchs, training_data, out, test_data, test_data_out)
-train(n2, num_batchs, training_data, out, test_data, test_data_out)
-train(n3, num_batchs, training_data, out, test_data, test_data_out)
-train(n4, num_batchs, training_data, out, test_data, test_data_out)
+# train(n1, num_batchs, training_data, out, test_data, test_data_out)
+# train(n2, num_batchs, training_data, out, test_data, test_data_out)
+# train(n3, num_batchs, training_data, out, test_data, test_data_out)
+# train(n4, num_batchs, training_data, out, test_data, test_data_out)
 train(n5, num_batchs, training_data, out, test_data, test_data_out)
 
 for i in range(len(acc)):
