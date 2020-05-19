@@ -4,7 +4,7 @@ import pickle
 import matplotlib.pyplot as plt
 
 class NeuralNetwork():
-    def __init__(self, num_input, num_hidden, num_output):
+    def __init__(self, num_input, num_hidden, num_output, learn):
         #initalise network
         self.num_input = num_input
         self.num_hidden = num_hidden
@@ -13,8 +13,8 @@ class NeuralNetwork():
         self.output_weights = [[np.random.randn() for i in range(num_output)] for j in range(num_hidden)]
         self.hidden_bias = [np.random.randn() for i in range(num_hidden)]
         self.output_bias = [np.random.randn() for i in range(num_output)]
-        self.learning_rate = 3
-        self.n_epochs = 5
+        self.learning_rate = learn
+        self.n_epochs = 1
         self.batch_size = 20
         
 
@@ -33,12 +33,12 @@ class NeuralNetwork():
         #run test data set, test predictions
         predictions = []
         for i in range(len(test_data)):
-            predict = network.predict(test_data[i])
+            predict = self.predict(test_data[i])
             max = 0
             for j in range(len(predict)):
                 if predict[j] > predict[max]:
                     max = j
-            print("prediction", i, ":", max, "    actual value:", test_data_out[i])
+            # print("prediction", i, ":", max, "    actual value:", test_data_out[i])
             predictions.append(max)
         return predictions
     
@@ -51,7 +51,7 @@ class NeuralNetwork():
             for j in range(len(predict)):
                 if predict[j] > predict[max]:
                     max = j
-            print("prediction", i, ":", max)
+            # print("prediction", i, ":", max)
             predictions.append(max)
         return predictions
 
@@ -73,7 +73,7 @@ class NeuralNetwork():
             self.hidden_bias[i] -= (self.learning_rate * (hidden_bias_grad[i] / batch_size))
 
         #update output bias
-        for i in range(len(network.output_bias)):
+        for i in range(len(self.output_bias)):
             self.output_bias[i] -= (self.learning_rate * (output_bias_grad[i] /batch_size))
 
     def predict(self, sample):
@@ -120,18 +120,15 @@ class NeuralNetwork():
 
 
     def backward_pass(self, out_h, out_o, error, inputs, target):
-        #output arrays size of weights to store their gradients
         hidden_output_grad = [[0 for i in range(self.num_output)] for j in range(self.num_hidden)]
         input_hidden_grad = [[0 for i in range(self.num_hidden)] for j in range(self.num_input)]
-        hidden_bias_grad = [0 for i in range(self.num_hidden)]
-        output_bias_grad = [0 for i in range(self.num_output)]
 
-        #error arrays used to store different parts of the calculations 
         out_error_derivative = [0 for i in range(self.num_output)]
         hidden_error = [[0 for i in range(self.num_output)] for j in range(self.num_hidden)]
         hidden_error_summed = [0 for i in range(self.num_hidden)]
         input_error = [0 for i in range(self.num_hidden)]
-        
+        hidden_bias_grad = [0 for i in range(self.num_hidden)]
+        output_bias_grad = [0 for i in range(self.num_output)]
 
         #calculate error from output node
         for i in range(len(error)):
@@ -172,6 +169,70 @@ class NeuralNetwork():
 
 
 
+def train(network, num_batchs, training_data, out, test_data, test_data_out):
+    for epoch in range(network.n_epochs):
+        for batch in range(num_batchs):
+            # print("batch number: ", batch)
+
+            current = training_data[(batch * network.batch_size): ((batch + 1) * network.batch_size)]
+            current_target = output_data[(batch * network.batch_size): ((batch + 1) * network.batch_size)]
+
+            current_size = len(current)
+
+            #initialise gradients sum and average arrays
+            hidden_weights_sum = [[0 for i in range(network.num_hidden)] for j in range(network.num_input)]
+            output_weights_sum = [[0 for i in range(network.num_output)] for j in range(network.num_hidden)]
+            hidden_bias_sum = [0 for i in range(network.num_hidden)]
+            output_bias_sum = [0 for i in range(network.num_output)]
+
+            gradients_sum = [0 for i in range((inputs * hiddens) + (hiddens * outputs) + hiddens + outputs)]
+            average_gradients = [0 for i in range((inputs * hiddens) + (hiddens * outputs) + hiddens + outputs)]
+
+            for i in range(len(current)):
+                out_h, out_o, error = network.forward_pass(current[i], current_target[i])
+                out_g, hidden_g, hbias_g, obias_g = network.backward_pass(out_h, out_o, error, current[i], current_target[i])
+
+                #add gradients from back pass to sum total
+                for i in range(len(out_g)):
+                    for j in range(len(out_g[i])):
+                        output_weights_sum[i][j] += out_g[i][j]
+
+                for i in range(len(hidden_g)):
+                    for j in range(len(hidden_g[i])):
+                        hidden_weights_sum[i][j] += hidden_g[i][j]
+
+                for i in range(len(hbias_g)):
+                    hidden_bias_sum[i] += hbias_g[i]
+
+                for i in range(len(obias_g)):
+                    output_bias_sum[i] += obias_g[i]
+
+            #update weights at end of mini batch
+            network.update_weights(output_weights_sum, hidden_weights_sum, hidden_bias_sum, output_bias_sum, current_size)
+            # np.savetxt('HiddenWeights.csv', network.hidden_weights)
+            # np.savetxt('HutputWeights.csv', network.output_weights)
+            # np.savetxt('HiddenBias.csv', network.hidden_bias)
+            # np.savetxt('OutputBias.csv', network.output_bias)
+
+            # errorSum = 0
+            # for i in range(len(error)):
+            #     errorSum += error[i]
+            # av_error = network.cost_function(errorSum)
+            # av_plot.append(av_error)
+        predictions = network.test_data(test_data, test_data_out)
+        right = 0
+        for i in range(len(predictions)):
+            if predictions[i] == test_data_out[i]:
+                right += 1
+        accuracy = (right / len(test_data_out) * 100)
+        print("accuracy = ", accuracy, "%")
+        arr = []
+        arr.append(accuracy)
+        arr.append(network.learning_rate)
+        acc.append(arr)
+        # next_predictions = network.predict_data(next_test_data)
+    # np.savetxt('PredictDigitY2.csv.gz', next_predictions)
+
 inputs = 784
 hiddens = 30
 outputs = 10
@@ -196,72 +257,29 @@ for i in range(len(out)):
     newo[int(out[i])] = 1
     output_data.append(newo)
 
-network = NeuralNetwork(inputs, hiddens, outputs)
-num_batchs = len(training_data) // network.batch_size
+n1 = NeuralNetwork(inputs, hiddens, outputs, 0.001)
+n2 = NeuralNetwork(inputs, hiddens, outputs, 0.1)
+n3 = NeuralNetwork(inputs, hiddens, outputs, 1.0)
+n4 = NeuralNetwork(inputs, hiddens, outputs, 10)
+n5 = NeuralNetwork(inputs, hiddens, outputs, 100)
+num_batchs = len(training_data) // n1.batch_size
 
-for epoch in range(network.n_epochs):
-    for batch in range(num_batchs):
-        print("batch number: ", batch)
+train(n1, num_batchs, training_data, out, test_data, test_data_out)
+train(n2, num_batchs, training_data, out, test_data, test_data_out)
+train(n3, num_batchs, training_data, out, test_data, test_data_out)
+train(n4, num_batchs, training_data, out, test_data, test_data_out)
+train(n5, num_batchs, training_data, out, test_data, test_data_out)
 
-        current = training_data[(batch * network.batch_size): ((batch + 1) * network.batch_size)]
-        current_target = output_data[(batch * network.batch_size): ((batch + 1) * network.batch_size)]
-
-        current_size = len(current)
-
-        #initialise gradients sum and average arrays
-        hidden_weights_sum = [[0 for i in range(network.num_hidden)] for j in range(network.num_input)]
-        output_weights_sum = [[0 for i in range(network.num_output)] for j in range(network.num_hidden)]
-        hidden_bias_sum = [0 for i in range(network.num_hidden)]
-        output_bias_sum = [0 for i in range(network.num_output)]
-
-        gradients_sum = [0 for i in range((inputs * hiddens) + (hiddens * outputs) + hiddens + outputs)]
-        average_gradients = [0 for i in range((inputs * hiddens) + (hiddens * outputs) + hiddens + outputs)]
-
-        for i in range(len(current)):
-            out_h, out_o, error = network.forward_pass(current[i], current_target[i])
-            out_g, hidden_g, hbias_g, obias_g = network.backward_pass(out_h, out_o, error, current[i], current_target[i])
-
-            #add gradients from back pass to sum total
-            for i in range(len(out_g)):
-                for j in range(len(out_g[i])):
-                    output_weights_sum[i][j] += out_g[i][j]
-
-            for i in range(len(hidden_g)):
-                for j in range(len(hidden_g[i])):
-                    hidden_weights_sum[i][j] += hidden_g[i][j]
-
-            for i in range(len(hbias_g)):
-                hidden_bias_sum[i] += hbias_g[i]
-
-            for i in range(len(obias_g)):
-                output_bias_sum[i] += obias_g[i]
-
-        #update weights at end of mini batch
-        network.update_weights(output_weights_sum, hidden_weights_sum, hidden_bias_sum, output_bias_sum, current_size)
-        np.savetxt('HiddenWeights.csv', network.hidden_weights)
-        np.savetxt('OutputWeights.csv', network.output_weights)
-        np.savetxt('HiddenBias.csv', network.hidden_bias)
-        np.savetxt('OutputBias.csv', network.output_bias)
-
-        # errorSum = 0
-        # for i in range(len(error)):
-        #     errorSum += error[i]
-        # av_error = network.cost_function(errorSum)
-        # av_plot.append(av_error)
-    predictions = network.test_data(test_data, test_data_out)
-    right = 0
-    for i in range(len(predictions)):
-        if predictions[i] == test_data_out[i]:
-            right += 1
-    accuracy = (right / len(test_data_out) * 100)
-    print("accuracy = ", accuracy, "%")
-    acc.append(accuracy)
-    next_predictions = network.predict_data(next_test_data)
-np.savetxt('PredictDigitY2.csv.gz', next_predictions, fmt='%0f')
-plt.plot(acc)
+for i in range(len(acc)):
+    plt.plot(acc[i][0], acc[i][1])
 plt.ylabel('Accuracy')
-plt.xlabel('Epoch')
+plt.xlabel('Learning Rate')
 plt.show()
+
+
+
+
+
 
 
         
